@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHEFS Call Board</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Tone.js CDN for sound effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+        }
+        .called-number {
+            background-color: #3b82f6 !important; /* Blue-500 for called numbers, now with !important */
+            color: white !important; /* White text, now with !important */
+            font-weight: bold;
+        }
+        /* Styles for the main board container */
+        .board-container {
+            padding: 1rem; /* p-4 */
+            background-color: #f3f4f6; /* bg-gray-100 */
+            border-radius: 0.5rem; /* rounded-lg */
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06); /* shadow-inner */
+            width: 100%; /* Ensure it takes full width */
+        }
+        /* Styling for each letter row */
+        .letter-row {
+            background-color: #ffffff; /* White background for each letter section */
+            padding: 0.75rem; /* Reduced padding */
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Subtle shadow for separation */
+            display: flex;
+            flex-direction: column; /* Stack letter label and numbers vertically */
+            align-items: center; /* Center content horizontally within the column */
+            gap: 0.5rem; /* Reduced gap between letter label and numbers */
+            width: 100%; /* Default to full width for smaller screens */
+        }
+        /* Styling for the letter label (C, H, E, F, S) */
+        .letter-label {
+            flex-shrink: 0; /* Prevent label from shrinking */
+            width: 80px; /* Reduced base width for the letter circle */
+            height: 80px; /* Reduced base height for the letter circle */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem; /* Reduced base font size for the letter */
+            font-weight: bold;
+            color: #1e40af; /* Darker blue for letters */
+            background-color: #bfdbfe; /* Light blue background for letter circle */
+            border-radius: 50%; /* Make it a circle */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        /* Styling for the area where numbers are displayed */
+        .numbers-display-area {
+            flex-grow: 1; /* Allow numbers area to take up remaining space */
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.2rem; /* Even tighter gap between numbers */
+            justify-content: center; /* Center numbers within their column */
+        }
+        /* Styling for individual number cells */
+        .number-cell {
+            flex-shrink: 0; /* Prevent numbers from shrinking */
+            width: 50px; /* Reduced base width */
+            height: 50px; /* Reduced base height */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f9fafb; /* bg-gray-50 - subtle initial background */
+            color: #374151; /* text-gray-800 */
+            border-radius: 0.5rem; /* rounded-lg */
+            font-size: 1.1rem; /* Reduced base font size */
+            font-weight: 600; /* font-semibold */
+            transition-colors: all 0.15s ease-in-out; /* Keep transition for smooth initial highlight */
+            user-select: none; /* select-none */
+        }
+        /* Responsive adjustments */
+        @media (min-width: 768px) { /* md */
+            .letter-label {
+                width: 90px;
+                height: 90px;
+                font-size: 3.25rem;
+            }
+            .number-cell {
+                width: 58px;
+                height: 58px;
+                font-size: 1.25rem;
+            }
+        }
+        @media (min-width: 1024px) { /* lg */
+            .letter-label {
+                width: 100px;
+                height: 100px;
+                font-size: 3.5rem;
+            }
+            .number-cell {
+                width: 62px;
+                height: 62px;
+                font-size: 1.35rem;
+            }
+        }
+        @media (min-width: 1280px) { /* xl */
+            .letter-row {
+                width: calc(20% - 1.2rem); /* Approx 1/5th width minus gap for 5 columns */
+            }
+            .letter-label {
+                width: 100px;
+                height: 100px;
+                font-size: 3.75rem;
+            }
+            .number-cell {
+                width: 60px; /* Adjusted for 5-column fit */
+                height: 60px; /* Adjusted for 5-column fit */
+                font-size: 1.5rem; /* Adjusted for readability */
+            }
+            .numbers-display-area {
+                gap: 0.25rem; /* Ensure tight packing */
+            }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="bg-white rounded-xl shadow-xl p-8 max-w-full w-full xl:max-w-[1920px] text-center">
+        <div class="flex items-center justify-center gap-4 mb-6">
+            <img id="headerImage" src="http://googleusercontent.com/file_content/1" alt="Ram Chef Logo" class="w-24 h-24 rounded-full shadow-md">
+            <h1 class="text-5xl font-extrabold text-gray-800 tracking-tight">CHEFS Call Board</h1>
+            <button id="changeLogoBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-full shadow-sm transition duration-300 ease-in-out">
+                Change Logo
+            </button>
+        </div>
+
+        <!-- Hidden file input for logo upload -->
+        <input type="file" id="logoUploadInput" accept="image/*" class="hidden">
+
+        <!-- Display for the last called number -->
+        <div class="mb-8 p-6 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl shadow-lg">
+            <p class="text-3xl font-semibold mb-2">Last Called:</p>
+            <p id="lastCalled" class="text-6xl font-extrabold">--</p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-wrap justify-center gap-4 mb-8">
+            <button id="callNumberBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300 focus:ring-opacity-75 text-2xl">
+                Call Next Number
+            </button>
+            <button id="toggleFullscreenBtn" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-purple-300 focus:ring-opacity-75 text-2xl">
+                Toggle Full Screen
+            </button>
+            <button id="showHistoryBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-75 text-2xl">
+                Show Call History
+            </button>
+        </div>
+
+        <!-- CHEFS Board -->
+        <div id="chefsBoardContainer" class="board-container">
+            <div id="chefsBoard" class="flex flex-col gap-4 w-full xl:flex-row xl:flex-wrap xl:justify-center xl:gap-6">
+                <!-- Letter rows and numbers will be dynamically generated here by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Reset Button (initially hidden) -->
+        <button id="resetBoardBtn" class="hidden mt-8 bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-red-300 focus:ring-opacity-75 text-xl">
+            Reset Board
+        </button>
+
+        <!-- Message Box for alerts -->
+        <div id="messageBox" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+            <div class="bg-white p-8 rounded-lg shadow-xl text-center max-w-sm w-full">
+                <p id="messageText" class="text-xl font-semibold text-gray-800 mb-6"></p>
+                <button id="closeMessageBox" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg transition duration-300 ease-in-out">
+                    OK
+                </button>
+            </div>
+        </div>
+
+        <!-- Call History Modal -->
+        <div id="callHistoryModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50 p-4">
+            <div class="bg-white p-8 rounded-xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto relative">
+                <h2 class="text-4xl font-extrabold text-gray-800 mb-6">Call History</h2>
+                <div id="callHistoryList" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 text-lg font-semibold text-gray-700">
+                    <!-- History items will be populated here -->
+                </div>
+                <button id="closeHistoryModal" class="absolute top-4 right-4 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out">
+                    X
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Define the ranges for each letter in CHEFS
+        const chefsRanges = {
+            'C': { min: 1, max: 15 },
+            'H': { min: 16, max: 30 },
+            'E': { min: 31, max: 45 },
+            'F': { min: 46, max: 60 },
+            'S': { min: 61, max: 75 }
+        };
+
+        // Keep track of all numbers that have been called
+        let calledNumbers = new Set(); // Use a Set for efficient checking
+        let callHistory = []; // Use an array to maintain order for history display
+
+        // Get references to DOM elements
+        const chefsBoard = document.getElementById('chefsBoard');
+        const lastCalledDisplay = document.getElementById('lastCalled');
+        const callNumberBtn = document.getElementById('callNumberBtn');
+        const resetBoardBtn = document.getElementById('resetBoardBtn');
+        const toggleFullscreenBtn = document.getElementById('toggleFullscreenBtn');
+        const messageBox = document.getElementById('messageBox');
+        const messageText = document.getElementById('messageText');
+        const closeMessageBoxBtn = document.getElementById('closeMessageBox');
+
+        // History elements
+        const showHistoryBtn = document.getElementById('showHistoryBtn');
+        const callHistoryModal = document.getElementById('callHistoryModal');
+        const callHistoryList = document.getElementById('callHistoryList');
+        const closeHistoryModalBtn = document.getElementById('closeHistoryModal');
+
+        // Logo Upload elements
+        const headerImage = document.getElementById('headerImage');
+        const changeLogoBtn = document.getElementById('changeLogoBtn');
+        const logoUploadInput = document.getElementById('logoUploadInput');
+        const defaultLogoSrc = "http://googleusercontent.com/file_content/1"; // Store the default logo URL
+
+        // Initialize Tone.js Synth for sound effects
+        const synth = new Tone.Synth({
+            oscillator: {
+                type: "sine"
+            },
+            envelope: {
+                attack: 0.001,
+                decay: 0.05,
+                sustain: 0,
+                release: 0.1
+            }
+        }).toDestination();
+
+        /**
+         * Displays a custom message box instead of alert().
+         * @param {string} message - The message to display.
+         */
+        function showMessageBox(message) {
+            messageText.textContent = message;
+            messageBox.classList.remove('hidden');
+        }
+
+        /**
+         * Hides the custom message box.
+         */
+        function hideMessageBox() {
+            messageBox.classList.add('hidden');
+        }
+
+        /**
+         * Initializes the CHEFS board by creating letter rows and number cells within them.
+         */
+        function initializeBoard() {
+            // Clear any existing content from the main board container
+            chefsBoard.innerHTML = '';
+
+            // Iterate through each letter in CHEFS
+            for (const letter of ['C', 'H', 'E', 'F', 'S']) {
+                const range = chefsRanges[letter];
+
+                // Create a container for each letter's row
+                const letterRowDiv = document.createElement('div');
+                letterRowDiv.classList.add('letter-row', 'w-full'); // Base width
+                // Responsive widths for columns
+                letterRowDiv.classList.add('md:w-[calc(50%-0.5rem)]', 'lg:w-[calc(33.33%-0.67rem)]', 'xl:w-[calc(20%-1.2rem)]');
+
+
+                // Create the letter label (e.g., 'C' in a circle)
+                const letterLabelDiv = document.createElement('div');
+                letterLabelDiv.classList.add('letter-label');
+                letterLabelDiv.textContent = letter;
+                letterRowDiv.appendChild(letterLabelDiv);
+
+                // Create a flex container for the numbers within the current letter's range
+                const numbersContainer = document.createElement('div');
+                numbersContainer.id = `numbers-${letter}`;
+                numbersContainer.classList.add('numbers-display-area');
+                letterRowDiv.appendChild(numbersContainer);
+
+                // Populate numbers for this specific letter's range
+                for (let number = range.min; number <= range.max; number++) {
+                    const numberCell = document.createElement('div');
+                    numberCell.id = `cell-${number}`; // Unique ID for each cell
+                    numberCell.textContent = number;
+                    // Initial state: subtle gray background, gray text
+                    numberCell.classList.add(
+                        'number-cell',
+                        'bg-gray-50', // Initial background color
+                        'text-gray-800', // Initial text color
+                        'transition-colors', 'duration-150', 'ease-in-out' // Keep transition for smooth initial highlight
+                    );
+                    // Apply 'called-number' class if already called (for reset scenarios)
+                    if (calledNumbers.has(number)) {
+                        numberCell.classList.add('called-number');
+                    }
+                    numbersContainer.appendChild(numberCell);
+                }
+                // Append the completed letter row to the main CHEFS board
+                chefsBoard.appendChild(letterRowDiv);
+            }
+        }
+
+        /**
+         * Randomly selects a letter and a number that hasn't been called yet.
+         * @returns {{letter: string, number: number}|null} The called letter and number, or null if all numbers are called.
+         */
+        function getRandomUncalledNumber() {
+            const availableLetters = Object.keys(chefsRanges);
+            let attempts = 0;
+            const maxAttempts = 100;
+
+            while (attempts < maxAttempts) {
+                const randomLetter = availableLetters[Math.floor(Math.random() * availableLetters.length)];
+                const range = chefsRanges[randomLetter];
+                const possibleNumbersForLetter = Array.from({ length: range.max - range.min + 1 }, (_, i) => range.min + i);
+                const uncalledNumbersForLetter = possibleNumbersForLetter.filter(num => !calledNumbers.has(num));
+
+                if (uncalledNumbersForLetter.length > 0) {
+                    const randomNumber = uncalledNumbersForLetter[Math.floor(Math.random() * uncalledNumbersForLetter.length)];
+                    return { letter: randomLetter, number: randomNumber };
+                }
+                attempts++;
+            }
+            return null;
+        }
+
+        /**
+         * Handles the "Call Next Number" button click.
+         */
+        function handleCallNumber() {
+            if (calledNumbers.size === 75) {
+                showMessageBox("All numbers have been called! The game is complete. Click Reset to start a new game.");
+                callNumberBtn.disabled = true;
+                callNumberBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                resetBoardBtn.classList.remove('hidden');
+                return;
+            }
+
+            synth.triggerAttackRelease("C6", "16n"); // Play the sound effect
+
+            const result = getRandomUncalledNumber();
+
+            if (result) {
+                const { letter, number } = result;
+                calledNumbers.add(number);
+                callHistory.push(`${letter}-${number}`); // Add to history array
+
+                lastCalledDisplay.textContent = `${letter}-${number}`;
+                highlightNumber(number); // Call the updated highlight function
+
+                if (calledNumbers.size === 75) {
+                    callNumberBtn.disabled = true;
+                    callNumberBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    resetBoardBtn.classList.remove('hidden');
+                }
+            } else {
+                showMessageBox("Could not find an uncalled number. All numbers might be called.");
+                callNumberBtn.disabled = true;
+                callNumberBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                resetBoardBtn.classList.remove('hidden');
+            }
+        }
+
+        /**
+         * Highlights a number on the board with a flash effect (3 times) before settling.
+         * @param {number} number - The number to highlight.
+         */
+        function highlightNumber(number) {
+            const cell = document.getElementById(`cell-${number}`);
+            if (cell) {
+                // Ensure all potential background/text color classes are removed to start clean
+                cell.classList.remove('bg-gray-50', 'text-gray-800', 'bg-yellow-300', 'text-gray-900', 'called-number');
+
+                let flashCount = 0;
+                const totalFlashes = 3; // Number of times to flash
+                const flashInterval = 150; // Duration of each flash state (on or off)
+
+                const animateFlash = () => {
+                    if (flashCount < totalFlashes * 2) { // totalFlashes * 2 for ON and OFF states
+                        if (flashCount % 2 === 0) { // Even count: Flash ON (yellow)
+                            cell.classList.add('bg-yellow-300', 'text-gray-900');
+                        } else { // Odd count: Flash OFF (return to initial subtle gray)
+                            cell.classList.remove('bg-yellow-300', 'text-gray-900');
+                            cell.classList.add('bg-gray-50', 'text-gray-800'); // Re-apply initial gray for flash off
+                        }
+                        flashCount++;
+                        setTimeout(animateFlash, flashInterval); // Schedule next flash
+                    } else {
+                        // Flashing complete, apply final blue state
+                        // Ensure all temporary flash classes are removed before applying final style
+                        cell.classList.remove('bg-gray-50', 'text-gray-800', 'bg-yellow-300', 'text-gray-900');
+                        cell.classList.add('called-number'); // Apply final blue and white text
+                    }
+                };
+
+                animateFlash(); // Start the flashing sequence
+            }
+        }
+
+        /**
+         * Resets the board to its initial state.
+         */
+        function resetBoard() {
+            calledNumbers.clear();
+            callHistory = []; // Clear call history
+            lastCalledDisplay.textContent = '--';
+            initializeBoard(); // Re-initialize the board to reset all styles
+
+            callNumberBtn.disabled = false;
+            callNumberBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            resetBoardBtn.classList.add('hidden');
+
+            // Reset header image to default
+            headerImage.src = defaultLogoSrc;
+        }
+
+        /**
+         * Toggles full screen mode for the document.
+         */
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+                    showMessageBox(`Failed to enter full screen: ${err.message}. Your browser might block it.`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        /**
+         * Populates and displays the call history modal.
+         */
+        function showCallHistoryModal() {
+            callHistoryList.innerHTML = ''; // Clear previous history
+            if (callHistory.length === 0) {
+                callHistoryList.innerHTML = '<p class="col-span-full text-center text-gray-500">No numbers have been called yet.</p>';
+            } else {
+                callHistory.forEach(item => {
+                    const historyItem = document.createElement('div');
+                    historyItem.classList.add('p-2', 'bg-blue-50', 'rounded-md', 'text-blue-800', 'font-bold');
+                    historyItem.textContent = item;
+                    callHistoryList.appendChild(historyItem);
+                });
+            }
+            callHistoryModal.classList.remove('hidden');
+        }
+
+        /**
+         * Handles the selection of a new logo image.
+         * @param {Event} event - The change event from the file input.
+         */
+        function handleLogoUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    headerImage.src = e.target.result; // Set the header image source
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Event Listeners
+        callNumberBtn.addEventListener('click', handleCallNumber);
+        resetBoardBtn.addEventListener('click', resetBoard);
+        closeMessageBoxBtn.addEventListener('click', hideMessageBox);
+        toggleFullscreenBtn.addEventListener('click', toggleFullScreen);
+        showHistoryBtn.addEventListener('click', showCallHistoryModal); // New history button listener
+        closeHistoryModalBtn.addEventListener('click', () => callHistoryModal.classList.add('hidden')); // Close history modal
+
+        // Logo upload event listeners
+        changeLogoBtn.addEventListener('click', () => logoUploadInput.click()); // Trigger hidden input click
+        logoUploadInput.addEventListener('change', handleLogoUpload); // Handle file selection
+
+
+        // Initialize the board when the page loads
+        document.addEventListener('DOMContentLoaded', initializeBoard);
+    </script>
+</body>
+</html>
