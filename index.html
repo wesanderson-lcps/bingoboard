@@ -127,15 +127,8 @@
 
     <div class="bg-white rounded-xl shadow-xl p-8 max-w-full w-full xl:max-w-[1920px] text-center">
         <div class="flex items-center justify-center gap-4 mb-6">
-            <img id="headerImage" src="http://googleusercontent.com/file_content/1" alt="Ram Chef Logo" class="w-24 h-24 rounded-full shadow-md">
             <h1 class="text-5xl font-extrabold text-gray-800 tracking-tight">CHEFS Call Board</h1>
-            <button id="changeLogoBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-full shadow-sm transition duration-300 ease-in-out">
-                Change Logo
-            </button>
         </div>
-
-        <!-- Hidden file input for logo upload -->
-        <input type="file" id="logoUploadInput" accept="image/*" class="hidden">
 
         <!-- Display for the last called number -->
         <div class="mb-8 p-6 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl shadow-lg">
@@ -223,11 +216,6 @@
         const callHistoryList = document.getElementById('callHistoryList');
         const closeHistoryModalBtn = document.getElementById('closeHistoryModal');
 
-        // Logo Upload elements
-        const headerImage = document.getElementById('headerImage');
-        const changeLogoBtn = document.getElementById('changeLogoBtn');
-        const logoUploadInput = document.getElementById('logoUploadInput');
-        const defaultLogoSrc = "http://googleusercontent.com/file_content/1"; // Store the default logo URL
 
         // Initialize Tone.js Synth for sound effects
         const synth = new Tone.Synth({
@@ -420,9 +408,6 @@
             callNumberBtn.disabled = false;
             callNumberBtn.classList.remove('opacity-50', 'cursor-not-allowed');
             resetBoardBtn.classList.add('hidden');
-
-            // Reset header image to default
-            headerImage.src = defaultLogoSrc;
         }
 
         /**
@@ -459,21 +444,6 @@
             callHistoryModal.classList.remove('hidden');
         }
 
-        /**
-         * Handles the selection of a new logo image.
-         * @param {Event} event - The change event from the file input.
-         */
-        function handleLogoUpload(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    headerImage.src = e.target.result; // Set the header image source
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
         // Event Listeners
         callNumberBtn.addEventListener('click', handleCallNumber);
         resetBoardBtn.addEventListener('click', resetBoard);
@@ -481,11 +451,6 @@
         toggleFullscreenBtn.addEventListener('click', toggleFullScreen);
         showHistoryBtn.addEventListener('click', showCallHistoryModal); // New history button listener
         closeHistoryModalBtn.addEventListener('click', () => callHistoryModal.classList.add('hidden')); // Close history modal
-
-        // Logo upload event listeners
-        changeLogoBtn.addEventListener('click', () => logoUploadInput.click()); // Trigger hidden input click
-        logoUploadInput.addEventListener('change', handleLogoUpload); // Handle file selection
-
 
         // Initialize the board when the page loads
         document.addEventListener('DOMContentLoaded', initializeBoard);
